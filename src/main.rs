@@ -7,7 +7,6 @@ use anyhow::{Context as _, Result};
 use cfdkim::DKIMResult;
 use mailparse::MailHeaderMap;
 use slog::Drain;
-use std::io::Read;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -17,12 +16,9 @@ async fn main() -> Result<()> {
 
     let logger = slog::Logger::root(drain, o!());
 
-    let mut input = Vec::new();
-    let stdin = std::io::stdin();
-    let mut handle = stdin.lock();
-    handle.read_to_end(&mut input)?;
+    let input = std::io::read_to_string(std::io::stdin())?.replace("\n", "\r\n");
 
-    let parsed_email = mailparse::parse_mail(&input)?;
+    let parsed_email = mailparse::parse_mail(input.as_bytes())?;
     let headers = parsed_email.get_headers();
     let from = headers.get_all_headers("From");
     let from_domain: String = match &from[..] {
